@@ -121,7 +121,7 @@
     <string name="mp_pb_background_title">خلفية شديدة السواد</string>
     <string name="section_title_media_player_icons">أيقونات مشغل الوسائط</string>
     <string name="hide_label_title">إخفاء التسمية</string>
-    <string name="hide_label_desc">إزالة تسميات البلاط الإعدادات السريعة</string>
+    <string name="hide_label_desc">إزالة تسميات بلاط الإعدادات السريعة</string>
     <string name="text_size_title">Text Size</string>
     <string name="opt_selected">Selected:</string>
     <string name="opt_default">(Default)</string>
