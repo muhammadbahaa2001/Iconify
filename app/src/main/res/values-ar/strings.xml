@@ -252,7 +252,7 @@
     <string name="btn_create_module">إنشاء Module</string>
     <string name="read_carefully">اقرأ بعناية!</string>
     <string name="volume_module_installation_guide">سيؤدي هذا الخيار إلى إنشاء Magisk Module  داخل مجلد التنزيل في وحدة التخزين الداخلية. قم بتثبيت الـModule المسمى IconifyCompanion.zip في Magisk. قم دائمًا بإلغاء تثبيت الـModule السابق لـIconify Companion (إذا كان مثبت) وأعد التشغيل قبل وتثبيت Module جديد.\n\n<b> ملاحظة: </b>\n• قم بإلغاء تثبيت الـModule قبل تثبيت الروم.\n• أعد إنشاء الـModule إذا قمت بتغيير أو تحديث الروم.\n• لا تقم بتثبيت Module لم يتم إنشاؤها بناءً على الروم الخاص بك.</string>
-    <string name="transparent_qs_panel_title">Transparent QS Panel</string>
+    <string name="transparent_qs_panel_title">لوحة الإعدادات السريعة الشفافة</string>
     <string name="transparent_qs_panel_desc">Make QS panel background transparent</string>
     <string name="transparency_alpha_title">Transparency Alpha</string>
     <string name="vertical_qs_tile_title">Vertical QS Tile</string>
