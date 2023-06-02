@@ -244,14 +244,14 @@
     <string name="update_schedule4">كل أسبوع</string>
     <string name="update_schedule5">مطلقاً</string>
     <!-- do not change {latestVersionName} -->
-    <string name="update_dialog_desc">Update {latestVersionName} is available to download.</string>
-    <string name="checking_for_update">Checking For Update</string>
-    <string name="toast_module_created">Module created successfully</string>
-    <string name="volume_style">Volume Style</string>
-    <string name="volume_module_desc">Creates a magisk flashable module for this style</string>
-    <string name="btn_create_module">Create Module</string>
-    <string name="read_carefully">Read Carefully!</string>
-    <string name="volume_module_installation_guide">This option will create a magisk module inside Download folder in your Internal Storage. Flash the module named IconifyCompanion.zip in Magisk. Always uninstall previous Iconify Companion module (if installed) and reboot before flashing new one.\n\n<b>Note:</b>\n• Uninstall the module before updating rom.\n• Recreate the module if you change or update rom.\n• Do not flash a module which wasn\'t created based on your rom.</string>
+    <string name="update_dialog_desc">تحديث {latestVersionName} متاح للتنزيل.</string>
+    <string name="checking_for_update">جارِِ التحقق من وجود التحديث</string>
+    <string name="toast_module_created">تم إنشاء Module بنجاح</string>
+    <string name="volume_style">نمط الصوت</string>
+    <string name="volume_module_desc">يقوم بإنشاء Magisk Module قابلة للتثبيت لهذا النمط</string>
+    <string name="btn_create_module">إنشاء Module</string>
+    <string name="read_carefully">اقرأ بعناية!</string>
+    <string name="volume_module_installation_guide">سيؤدي هذا الخيار إلى إنشاء Magisk Module  داخل مجلد التنزيل في وحدة التخزين الداخلية. قم بتثبيت الـModule المسمى IconifyCompanion.zip في Magisk. قم دائمًا بإلغاء تثبيت الـModule السابق لـIconify Companion (إذا كان مثبت) وأعد التشغيل قبل وتثبيت Module جديد.\n\n<b> ملاحظة: </b>\n• قم بإلغاء تثبيت الـModule قبل تثبيت الروم.\n• أعد إنشاء الـModule إذا قمت بتغيير أو تحديث الروم.\n• لا تقم بتثبيت Module لم يتم إنشاؤها بناءً على الروم الخاص بك.</string>
     <string name="transparent_qs_panel_title">Transparent QS Panel</string>
     <string name="transparent_qs_panel_desc">Make QS panel background transparent</string>
     <string name="transparency_alpha_title">Transparency Alpha</string>
