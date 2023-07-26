@@ -2,40 +2,30 @@ package com.drdisagree.iconify.utils.compiler;
 
 import static com.drdisagree.iconify.common.Const.FRAMEWORK_PACKAGE;
 import static com.drdisagree.iconify.common.Const.SYSTEMUI_PACKAGE;
-import static com.drdisagree.iconify.common.Dynamic.AAPT;
-import static com.drdisagree.iconify.common.Dynamic.ZIPALIGN;
-import static com.drdisagree.iconify.utils.apksigner.CryptoUtils.readCertificate;
-import static com.drdisagree.iconify.utils.apksigner.CryptoUtils.readPrivateKey;
 import static com.drdisagree.iconify.utils.helpers.Logger.writeLog;
 
 import android.util.Log;
 
-import com.drdisagree.iconify.Iconify;
 import com.drdisagree.iconify.common.Resources;
 import com.drdisagree.iconify.utils.FileUtil;
 import com.drdisagree.iconify.utils.OverlayUtil;
 import com.drdisagree.iconify.utils.RootUtil;
 import com.drdisagree.iconify.utils.SystemUtil;
-import com.drdisagree.iconify.utils.apksigner.JarMap;
-import com.drdisagree.iconify.utils.apksigner.SignAPK;
 import com.drdisagree.iconify.utils.helpers.BinaryInstaller;
 import com.topjohnwu.superuser.Shell;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
 
 public class RoundnessCompiler {
 
     private static final String TAG = "RoundnessCompiler";
-    private static final String aapt = AAPT.getAbsolutePath();
-    private static final String zipalign = ZIPALIGN.getAbsolutePath();
     private static final String[] mPackages = {FRAMEWORK_PACKAGE, SYSTEMUI_PACKAGE};
     private static final String[] mOverlayName = {"CR1", "CR2"};
+    private static boolean mEnable = false;
 
-    public static boolean buildOverlay(String[] resources) throws IOException {
+    public static boolean buildOverlay(String[] resources, boolean enable) throws IOException {
+        mEnable = enable;
+
         preExecute();
 
         for (int i = 0; i < 2; i++) {
@@ -54,21 +44,21 @@ public class RoundnessCompiler {
             }
 
             // Build APK using AAPT
-            if (runAapt(Resources.DATA_DIR + "/Overlays/" + mPackages[i] + "/" + mOverlayName[i], mOverlayName[i])) {
+            if (OverlayCompiler.runAapt(Resources.DATA_DIR + "/Overlays/" + mPackages[i] + "/" + mOverlayName[i])) {
                 Log.e(TAG, "Failed to build " + mOverlayName[i] + "! Exiting...");
                 postExecute(true);
                 return true;
             }
 
             // ZipAlign the APK
-            if (zipAlign(mOverlayName[i], Resources.UNSIGNED_UNALIGNED_DIR + "/" + mOverlayName[i] + "-unsigned-unaligned.apk")) {
+            if (OverlayCompiler.zipAlign(Resources.UNSIGNED_UNALIGNED_DIR + "/" + mOverlayName[i] + "-unsigned-unaligned.apk")) {
                 Log.e(TAG, "Failed to align " + mOverlayName[i] + "-unsigned-unaligned.apk! Exiting...");
                 postExecute(true);
                 return true;
             }
 
             // Sign the APK
-            if (apkSigner(mOverlayName[i], Resources.UNSIGNED_DIR + "/" + mOverlayName[i] + "-unsigned.apk")) {
+            if (OverlayCompiler.apkSigner(Resources.UNSIGNED_DIR + "/" + mOverlayName[i] + "-unsigned.apk")) {
                 Log.e(TAG, "Failed to sign " + mOverlayName[i] + "-unsigned.apk! Exiting...");
                 postExecute(true);
                 return true;
@@ -99,8 +89,13 @@ public class RoundnessCompiler {
         Shell.cmd("mkdir -p " + Resources.SIGNED_DIR).exec();
 
         // Disable the overlay in case it is already enabled
-        for (String overlayName : mOverlayName)
-            OverlayUtil.disableOverlay("IconifyComponent" + overlayName + ".overlay");
+        if (mEnable) {
+            String[] overlayNames = new String[mOverlayName.length];
+            for (int i = 1; i <= mOverlayName.length; i++) {
+                overlayNames[i - 1] = "IconifyComponentCR" + i + ".overlay";
+            }
+            OverlayUtil.disableOverlays(overlayNames);
+        }
     }
 
     private static void postExecute(boolean hasErroredOut) {
@@ -109,6 +104,7 @@ public class RoundnessCompiler {
             for (String overlayName : mOverlayName) {
                 Shell.cmd("cp -rf " + Resources.SIGNED_DIR + "/IconifyComponent" + overlayName + ".apk " + Resources.OVERLAY_DIR + "/IconifyComponent" + overlayName + ".apk").exec();
                 RootUtil.setPermissions(644, Resources.OVERLAY_DIR + "/IconifyComponent" + overlayName + ".apk");
+                Shell.cmd("pm install -r " + Resources.OVERLAY_DIR + "/IconifyComponent" + overlayName + ".apk").exec();
             }
 
             SystemUtil.mountRW();
@@ -118,8 +114,14 @@ public class RoundnessCompiler {
             }
             SystemUtil.mountRO();
 
-            for (String overlayName : mOverlayName)
-                OverlayUtil.enableOverlay("IconifyComponent" + overlayName + ".overlay");
+            // Enable the overlays
+            if (mEnable) {
+                String[] overlayNames = new String[mOverlayName.length];
+                for (int i = 1; i <= mOverlayName.length; i++) {
+                    overlayNames[i - 1] = "IconifyComponentCR" + i + ".overlay";
+                }
+                OverlayUtil.enableOverlays(overlayNames);
+            }
         }
 
         // Clean temp directory
@@ -151,49 +153,5 @@ public class RoundnessCompiler {
         }
 
         return !result.isSuccess();
-    }
-
-    private static boolean runAapt(String source, String name) {
-        Shell.Result result = Shell.cmd(aapt + " p -f -v -M " + source + "/AndroidManifest.xml -I /system/framework/framework-res.apk -S " + source + "/res -F " + Resources.UNSIGNED_UNALIGNED_DIR + '/' + name + "-unsigned-unaligned.apk >/dev/null;").exec();
-
-        if (result.isSuccess()) Log.i(TAG + " - AAPT", "Successfully built APK for " + name);
-        else {
-            Log.e(TAG + " - AAPT", "Failed to build APK for " + name + '\n' + String.join("\n", result.getOut()));
-            writeLog(TAG + " - AAPT", "Failed to build APK for " + name, result.getOut());
-        }
-
-        return !result.isSuccess();
-    }
-
-    private static boolean zipAlign(String overlay_name, String source) {
-        Shell.Result result = Shell.cmd(zipalign + " 4 " + source + ' ' + Resources.UNSIGNED_DIR + "/" + overlay_name + "-unsigned.apk").exec();
-
-        if (result.isSuccess()) Log.i(TAG + " - ZipAlign", "Successfully zip aligned UiRoundness");
-        else {
-            Log.e(TAG + " - ZipAlign", "Failed to zip align UiRoundness\n" + String.join("\n", result.getOut()));
-            writeLog(TAG + " - ZipAlign", "Failed to zip align UiRoundness", result.getOut());
-        }
-
-        return !result.isSuccess();
-    }
-
-    private static boolean apkSigner(String overlay_name, String source) {
-        try {
-            PrivateKey key = readPrivateKey(Iconify.getAppContext().getAssets().open("Keystore/testkey.pk8"));
-            X509Certificate cert = readCertificate(Iconify.getAppContext().getAssets().open("Keystore/testkey.x509.pem"));
-
-            JarMap jar = JarMap.open(new FileInputStream(source), true);
-            FileOutputStream out = new FileOutputStream(Resources.SIGNED_DIR + "/IconifyComponent" + overlay_name + ".apk");
-
-            SignAPK.sign(cert, key, jar, out);
-
-            Log.i(TAG + " - APKSigner", "Successfully signed UiRoundness");
-        } catch (Exception e) {
-            Log.e(TAG, e.toString());
-            writeLog(TAG + " - APKSigner", "Failed to sign UiRoundness", e.toString());
-            postExecute(true);
-            return true;
-        }
-        return false;
     }
 }

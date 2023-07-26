@@ -8,11 +8,10 @@ import android.widget.Toast;
 
 import androidx.recyclerview.widget.ConcatAdapter;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.drdisagree.iconify.BuildConfig;
-import com.drdisagree.iconify.Iconify;
 import com.drdisagree.iconify.R;
+import com.drdisagree.iconify.databinding.ActivityInfoBinding;
 import com.drdisagree.iconify.ui.adapters.InfoAdapter;
 import com.drdisagree.iconify.ui.models.InfoModel;
 import com.drdisagree.iconify.ui.utils.ViewBindingHelpers;
@@ -21,20 +20,22 @@ import java.util.ArrayList;
 
 public class Info extends BaseActivity {
 
+    private ActivityInfoBinding binding;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_info);
+        binding = ActivityInfoBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
         // Header
-        ViewBindingHelpers.setHeader(this, findViewById(R.id.collapsing_toolbar), findViewById(R.id.toolbar), R.string.activity_title_info);
+        ViewBindingHelpers.setHeader(this, binding.header.collapsingToolbar, binding.header.toolbar, R.string.activity_title_info);
 
         // RecyclerView
-        RecyclerView container = findViewById(R.id.info_container);
-        container.setLayoutManager(new LinearLayoutManager(this));
+        binding.infoContainer.setLayoutManager(new LinearLayoutManager(this));
         ConcatAdapter adapter = new ConcatAdapter(initAppInfo(), initAppInfoExtended(), initCreditsList(), initContributorsList(), initTranslatorsList());
-        container.setAdapter(adapter);
-        container.setHasFixedSize(true);
+        binding.infoContainer.setAdapter(adapter);
+        binding.infoContainer.setHasFixedSize(true);
     }
 
     private InfoAdapter initAppInfo() {
@@ -53,7 +54,7 @@ public class Info extends BaseActivity {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText(getResources().getString(R.string.iconify_clipboard_label_version), getResources().getString(R.string.app_name) + "\n" + getResources().getString(R.string.iconify_clipboard_label_version_name) + ' ' + BuildConfig.VERSION_NAME + "\n" + getResources().getString(R.string.iconify_clipboard_label_version_code) + ' ' + BuildConfig.VERSION_CODE);
             clipboard.setPrimaryClip(clip);
-            Toast toast = Toast.makeText(Iconify.getAppContext(), getResources().getString(R.string.toast_copied), Toast.LENGTH_SHORT);
+            Toast toast = Toast.makeText(getApplicationContext(), getResources().getString(R.string.toast_copied), Toast.LENGTH_SHORT);
             toast.show();
         }, R.drawable.ic_info));
         app_info.add(new InfoModel(this, getResources().getString(R.string.info_github_title), getResources().getString(R.string.info_github_desc), "https://github.com/Mahmud0808/Iconify", R.drawable.ic_github));
@@ -73,6 +74,7 @@ public class Info extends BaseActivity {
         credits_list.add(new InfoModel(this, "modestCat", getResources().getString(R.string.info_rro_desc), "https://t.me/ModestCat03", R.drawable.ic_user));
         credits_list.add(new InfoModel(this, "Sanely Insane", getResources().getString(R.string.info_tester_desc), "https://t.me/sanely_insane", R.drawable.ic_user));
         credits_list.add(new InfoModel(this, "Jaguar", getResources().getString(R.string.info_tester_desc), "https://t.me/Jaguar0066", R.drawable.ic_user));
+        credits_list.add(new InfoModel(this, "hani & TeamFiles", getResources().getString(R.string.info_betterqs_desc), "https://github.com/itsHanibee", R.drawable.ic_user));
 
         return new InfoAdapter(this, credits_list);
     }
@@ -89,6 +91,7 @@ public class Info extends BaseActivity {
         contributors_list.add(new InfoModel(this, "mohamedamrnady", getResources().getString(R.string.info_contributor_desc), "https://github.com/mohamedamrnady", R.drawable.ic_user));
         contributors_list.add(new InfoModel(this, "H1mJT", getResources().getString(R.string.info_contributor_desc), "https://github.com/H1mJT", R.drawable.ic_user));
         contributors_list.add(new InfoModel(this, "KaeruShi", getResources().getString(R.string.info_contributor_desc), "https://github.com/KaeruShi", R.drawable.ic_user));
+        contributors_list.add(new InfoModel(this, "Displax", getResources().getString(R.string.info_contributor_desc), "https://github.com/Displax", R.drawable.ic_user));
 
         return new InfoAdapter(this, contributors_list);
     }

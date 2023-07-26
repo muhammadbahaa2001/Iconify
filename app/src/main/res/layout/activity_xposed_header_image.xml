@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:clipChildren="false"
-    android:fillViewport="true"
+    android:fitsSystemWindows="true"
     tools:context=".ui.activities.XposedHeaderImage">
 
     <androidx.core.widget.NestedScrollView
@@ -107,7 +107,7 @@
 
                 <SeekBar
                     android:id="@+id/header_image_height_seekbar"
-                    style="@style/customSeekBar"
+                    style="@style/SeekBar.Iconify"
                     android:max="240"
                     android:min="48"
                     android:progress="140" />
@@ -143,7 +143,7 @@
 
                 <SeekBar
                     android:id="@+id/image_alpha_seekbar"
-                    style="@style/customSeekBar"
+                    style="@style/SeekBar.Iconify"
                     android:max="100"
                     android:min="0"
                     android:progress="100" />
@@ -241,6 +241,8 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <include layout="@layout/view_header" />
+    <include
+        android:id="@+id/header"
+        layout="@layout/view_header" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

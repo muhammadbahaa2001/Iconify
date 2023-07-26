@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -73,7 +74,13 @@ public class QsShapeAdapter extends RecyclerView.Adapter<QsShapeAdapter.ViewHold
         setDrawable(holder.qs_tile3, ResourcesCompat.getDrawable(context.getResources(), itemList.get(position).getDisabled_drawable(), null));
         setDrawable(holder.qs_tile4, ResourcesCompat.getDrawable(context.getResources(), itemList.get(position).getEnabled_drawable(), null));
 
-        int textColor = itemList.get(position).isInverse_color() && SystemUtil.isDarkMode() ? R.color.textColorPrimary : R.color.textColorPrimaryInverse;
+        int textColor;
+
+        if (Objects.equals(variant, "QSSN")) {
+            textColor = itemList.get(position).isInverse_color() ? R.color.textColorPrimary : R.color.textColorPrimaryInverse;
+        } else {
+            textColor = itemList.get(position).isInverse_color() && SystemUtil.isDarkMode() ? R.color.textColorPrimary : R.color.textColorPrimaryInverse;
+        }
 
         holder.qs_text1.setTextColor(ContextCompat.getColor(context, textColor));
         holder.qs_icon1.setColorFilter(ContextCompat.getColor(context, textColor), android.graphics.PorterDuff.Mode.SRC_IN);
@@ -153,7 +160,7 @@ public class QsShapeAdapter extends RecyclerView.Adapter<QsShapeAdapter.ViewHold
                     QsShapePixelManager.enableOverlay(holder.getBindingAdapterPosition() + 1);
 
                 ((Activity) context).runOnUiThread(() -> {
-                    new Handler().postDelayed(() -> {
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
                         // Hide loading dialog
                         loadingDialog.hide();
 
@@ -182,7 +189,7 @@ public class QsShapeAdapter extends RecyclerView.Adapter<QsShapeAdapter.ViewHold
                     QsShapePixelManager.disable_pack(holder.getBindingAdapterPosition() + 1);
 
                 ((Activity) context).runOnUiThread(() -> {
-                    new Handler().postDelayed(() -> {
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
                         // Hide loading dialog
                         loadingDialog.hide();
 

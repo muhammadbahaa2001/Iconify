@@ -74,8 +74,8 @@
     <string name="secondary_color">İkincil Renk</string>
     <string name="minimal_qspanel">Minimal Hızlı Ayarlar Paneli</string>
     <string name="remove_top_shade_of_qspanel">Hızlı ayarlar panelinin üst bölümünü kaldır</string>
-    <string name="pitch_black_theme">Siyah Tema</string>
-    <string name="enable_pitch_black_colored_theme">Siyah temayı etkinleştir</string>
+    <string name="pitch_black_dark_title">Siyah Tema</string>
+    <string name="pitch_black_dark_desc">Siyah temayı etkinleştir</string>
     <string name="warning">Uyarı</string>
     <string name="btn_continue">DEVAM ET</string>
     <string name="iconify_logo">Iconify Logo</string>
@@ -218,8 +218,8 @@
     <string name="latest_version">Son Versiyon:</string>
     <string name="update_checking_failed">Güncelleme kontrolü başarısız!</string>
     <string name="not_available">Mevcut değil</string>
-    <string name="confirmation">Emin misiniz?</string>
-    <string name="you_will_loose_current_setup">Şu anki ayarlarınızı ve özelleştirmelerinizi kaybedeceksiniz.</string>
+    <string name="import_settings_confirmation_title">Emin misiniz?</string>
+    <string name="import_settings_confirmation_desc">Şu anki ayarlarınızı ve özelleştirmelerinizi kaybedeceksiniz.</string>
     <string name="positive">Evet</string>
     <string name="negative">Hayır</string>
     <string name="imported_settings">Ayarları içe aktarma başarılı</string>
@@ -344,7 +344,7 @@
     <string name="monet_fidelity">Uygun</string>
     <string name="monet_content">İçerik</string>
     <string name="app_not_found">Uygulama bulunamadı!</string>
-    <string name="monet_accent_saturation_title">Vurgu Doygunluğu</string>
+    <string name="monet_primary_accent_saturation_title">Vurgu Doygunluğu</string>
     <string name="monet_background_saturation_title">Arka Plan Doygunluğu</string>
     <string name="monet_background_lightness_title">Arka Plan Açıklığı</string>
     <string name="media_player_preview_music_title">Müzik Başlığı</string>

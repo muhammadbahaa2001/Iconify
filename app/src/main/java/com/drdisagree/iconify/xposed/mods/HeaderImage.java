@@ -4,18 +4,18 @@ import static com.drdisagree.iconify.common.Const.SYSTEMUI_PACKAGE;
 import static com.drdisagree.iconify.common.Preferences.HEADER_IMAGE_ALPHA;
 import static com.drdisagree.iconify.common.Preferences.HEADER_IMAGE_HEIGHT;
 import static com.drdisagree.iconify.common.Preferences.HEADER_IMAGE_LANDSCAPE_SWITCH;
+import static com.drdisagree.iconify.common.Preferences.HEADER_IMAGE_OVERLAP;
 import static com.drdisagree.iconify.common.Preferences.HEADER_IMAGE_SWITCH;
 import static com.drdisagree.iconify.common.Preferences.HEADER_IMAGE_ZOOMTOFIT;
 import static com.drdisagree.iconify.config.XPrefs.Xprefs;
-import static com.drdisagree.iconify.xposed.HookRes.resparams;
 import static de.robv.android.xposed.XposedBridge.hookAllMethods;
 import static de.robv.android.xposed.XposedBridge.log;
 import static de.robv.android.xposed.XposedHelpers.callMethod;
 import static de.robv.android.xposed.XposedHelpers.findClass;
 import static de.robv.android.xposed.XposedHelpers.getIntField;
 import static de.robv.android.xposed.XposedHelpers.getObjectField;
+import static de.robv.android.xposed.XposedHelpers.setObjectField;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.ImageDecoder;
@@ -38,22 +38,21 @@ import java.util.Objects;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.callbacks.XC_InitPackageResources;
-import de.robv.android.xposed.callbacks.XC_LayoutInflated;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 public class HeaderImage extends ModPack implements IXposedHookLoadPackage {
 
     private static final String TAG = "Iconify - XposedHeaderImage: ";
     private static final String QuickStatusBarHeaderClass = SYSTEMUI_PACKAGE + ".qs.QuickStatusBarHeader";
+    private static final String QSContainerImplClass = SYSTEMUI_PACKAGE + ".qs.QSContainerImpl";
     boolean showHeaderImage = false;
     int imageHeight = 140;
     int headerImageAlpha = 100;
     boolean zoomToFit = false;
+    boolean headerImageOverlap = false;
     boolean hideLandscapeHeaderImage = true;
     LinearLayout mQsHeaderLayout = null;
     ImageView mQsHeaderImageView = null;
-    private Object lpparamCustom = null;
 
     public HeaderImage(Context context) {
         super(context);
@@ -67,12 +66,11 @@ public class HeaderImage extends ModPack implements IXposedHookLoadPackage {
         headerImageAlpha = Xprefs.getInt(HEADER_IMAGE_ALPHA, 100);
         imageHeight = Xprefs.getInt(HEADER_IMAGE_HEIGHT, 140);
         zoomToFit = Xprefs.getBoolean(HEADER_IMAGE_ZOOMTOFIT, false);
+        headerImageOverlap = Xprefs.getBoolean(HEADER_IMAGE_OVERLAP, false);
         hideLandscapeHeaderImage = Xprefs.getBoolean(HEADER_IMAGE_LANDSCAPE_SWITCH, true);
 
         if (Key.length > 0 && (Objects.equals(Key[0], HEADER_IMAGE_SWITCH) || Objects.equals(Key[0], HEADER_IMAGE_LANDSCAPE_SWITCH) || Objects.equals(Key[0], HEADER_IMAGE_ALPHA) || Objects.equals(Key[0], HEADER_IMAGE_HEIGHT) || Objects.equals(Key[0], HEADER_IMAGE_ZOOMTOFIT))) {
-            if (lpparamCustom != null) {
-                callMethod(lpparamCustom, "updateResources");
-            }
+            updateQSHeaderImage();
         }
     }
 
@@ -85,15 +83,35 @@ public class HeaderImage extends ModPack implements IXposedHookLoadPackage {
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {
         if (!lpparam.packageName.equals(SYSTEMUI_PACKAGE)) return;
 
-        addHeaderImageLayout();
-
         final Class<?> QuickStatusBarHeader = findClass(QuickStatusBarHeaderClass, lpparam.classLoader);
+        final Class<?> QSContainerImpl = findClass(QSContainerImplClass, lpparam.classLoader);
 
         try {
+            hookAllMethods(QuickStatusBarHeader, "onFinishInflate", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) {
+                    FrameLayout mQuickStatusBarHeader = (FrameLayout) param.thisObject;
+
+                    mQsHeaderLayout = new LinearLayout(mContext);
+                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, imageHeight, mContext.getResources().getDisplayMetrics()));
+                    layoutParams.leftMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, -16, mContext.getResources().getDisplayMetrics());
+                    layoutParams.rightMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, -16, mContext.getResources().getDisplayMetrics());
+                    mQsHeaderLayout.setLayoutParams(layoutParams);
+                    mQsHeaderLayout.setVisibility(View.GONE);
+
+                    mQsHeaderImageView = new ImageView(mContext);
+                    mQsHeaderImageView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+                    mQsHeaderLayout.addView(mQsHeaderImageView);
+                    mQuickStatusBarHeader.addView(mQsHeaderLayout, 0);
+
+                    updateQSHeaderImage();
+                }
+            });
+
             hookAllMethods(QuickStatusBarHeader, "updateResources", new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(MethodHookParam param) {
-                    lpparamCustom = param.thisObject;
                     updateQSHeaderImage();
                 }
             });
@@ -104,8 +122,22 @@ public class HeaderImage extends ModPack implements IXposedHookLoadPackage {
                     View mDatePrivacyView = (View) getObjectField(param.thisObject, "mDatePrivacyView");
                     int mTopViewMeasureHeight = getIntField(param.thisObject, "mTopViewMeasureHeight");
 
-                    if ((int) callMethod(mDatePrivacyView, "getMeasuredHeight") != mTopViewMeasureHeight)
+                    if ((int) callMethod(mDatePrivacyView, "getMeasuredHeight") != mTopViewMeasureHeight) {
+                        setObjectField(param.thisObject, "mTopViewMeasureHeight", callMethod(mDatePrivacyView, "getMeasuredHeight"));
                         callMethod(param.thisObject, "updateAnimators");
+                    }
+                }
+            });
+
+            hookAllMethods(QSContainerImpl, "onFinishInflate", new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) {
+                    if (headerImageOverlap) return;
+
+                    FrameLayout mHeader = (FrameLayout) getObjectField(param.thisObject, "mHeader");
+                    ((FrameLayout) param.thisObject).removeView(mHeader);
+                    ((FrameLayout) param.thisObject).addView(mHeader, 0);
+                    ((FrameLayout) param.thisObject).requestLayout();
                 }
             });
         } catch (Throwable throwable) {
@@ -122,44 +154,15 @@ public class HeaderImage extends ModPack implements IXposedHookLoadPackage {
         }
 
         loadImageOrGif(mQsHeaderImageView);
+        mQsHeaderImageView.setImageAlpha((int) (headerImageAlpha / 100.0 * 255.0));
         mQsHeaderLayout.getLayoutParams().height = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, imageHeight, mContext.getResources().getDisplayMetrics());
+        mQsHeaderLayout.requestLayout();
 
         Configuration config = mContext.getResources().getConfiguration();
         if (config.orientation == Configuration.ORIENTATION_LANDSCAPE && hideLandscapeHeaderImage) {
             mQsHeaderLayout.setVisibility(View.GONE);
         } else {
             mQsHeaderLayout.setVisibility(View.VISIBLE);
-        }
-    }
-
-    private void addHeaderImageLayout() {
-        XC_InitPackageResources.InitPackageResourcesParam ourResparam = resparams.get(SYSTEMUI_PACKAGE);
-        if (ourResparam == null) return;
-
-        try {
-            ourResparam.res.hookLayout(SYSTEMUI_PACKAGE, "layout", "quick_status_bar_expanded_header", new XC_LayoutInflated() {
-                @SuppressLint({"DiscouragedApi"})
-                @Override
-                public void handleLayoutInflated(XC_LayoutInflated.LayoutInflatedParam liparam) {
-                    FrameLayout header = liparam.view.findViewById(liparam.res.getIdentifier("header", "id", mContext.getPackageName()));
-
-                    mQsHeaderLayout = new LinearLayout(mContext);
-                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, imageHeight, mContext.getResources().getDisplayMetrics()));
-                    layoutParams.leftMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, -16, mContext.getResources().getDisplayMetrics());
-                    layoutParams.rightMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, -16, mContext.getResources().getDisplayMetrics());
-                    mQsHeaderLayout.setLayoutParams(layoutParams);
-                    mQsHeaderLayout.setVisibility(View.GONE);
-
-                    mQsHeaderImageView = new ImageView(mContext);
-                    mQsHeaderImageView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                    mQsHeaderImageView.setAlpha((int) (headerImageAlpha / 100.0 * 255.0));
-
-                    mQsHeaderLayout.addView(mQsHeaderImageView);
-                    header.addView(mQsHeaderLayout, 0);
-                }
-            });
-        } catch (Throwable throwable) {
-            log(TAG + throwable);
         }
     }
 
@@ -189,12 +192,13 @@ public class HeaderImage extends ModPack implements IXposedHookLoadPackage {
 
             Drawable drawable = ImageDecoder.decodeDrawable(source);
             iv.setImageDrawable(drawable);
-            if (!zoomToFit) iv.setScaleType(ImageView.ScaleType.FIT_XY);
-            else {
+            iv.setClipToOutline(true);
+            if (!zoomToFit) {
+                iv.setScaleType(ImageView.ScaleType.FIT_XY);
+            } else {
                 iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
                 iv.setAdjustViewBounds(false);
                 iv.setCropToPadding(false);
-                iv.setClipToOutline(true);
                 iv.setMinimumWidth(ViewGroup.LayoutParams.MATCH_PARENT);
                 addOrRemoveProperty(iv, RelativeLayout.CENTER_IN_PARENT, true);
             }
@@ -202,7 +206,6 @@ public class HeaderImage extends ModPack implements IXposedHookLoadPackage {
             if (drawable instanceof AnimatedImageDrawable) {
                 ((AnimatedImageDrawable) drawable).start();
             }
-
         } catch (Throwable ignored) {
         }
     }

@@ -5,13 +5,13 @@
     <!-- <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" /> -->
     <!-- <uses-permission android:name="android.permission.FOREGROUND_SERVICE" /> -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> <!-- To notify about new iconify updates -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" /> <!-- Access phone storage for installation of overlays in temporary folder -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> <!-- Access phone storage for installation of overlays in temporary folder -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" /> <!-- Access phone storage for creating overlays in a temporary folder -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> <!-- Access phone storage for creating overlays in a temporary folder -->
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" /> <!-- Access phone storage for installation of overlays in temporary folder -->
     <uses-permission android:name="android.permission.INTERNET" /> <!-- For checking new updates -->
-
+    <!-- Checking for Installed Music Players -->
     <queries>
         <package android:name="com.maxmpz.audioplayer" />
         <package android:name="code.name.monkey.retromusic" />
@@ -38,19 +38,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Iconify"
-        tools:replace="android:allowBackup"
         tools:targetApi="tiramisu">
+        <activity
+            android:name=".ui.activities.QsPanelMargin"
+            android:exported="false" />
+        <activity
+            android:name=".ui.activities.XposedMenu"
+            android:exported="false" />
         <activity
             android:name=".ui.activities.Switch"
             android:exported="false" />
         <activity
-            android:name=".ui.activities.OnBoardingScreen3"
-            android:exported="false" />
-        <activity
-            android:name=".ui.activities.OnBoardingScreen2"
-            android:exported="false" />
-        <activity
-            android:name=".ui.activities.OnBoardingScreen1"
+            android:name=".ui.activities.Onboarding"
             android:exported="false" />
         <activity
             android:name=".ui.activities.ProgressBar"
@@ -169,6 +168,8 @@
         <activity
             android:name=".SplashActivity"
             android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:roundIcon="@mipmap/ic_launcher_round"
             android:theme="@style/Theme.Iconify.SplashScreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -176,6 +177,35 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity-alias
+            android:name=".SplashActivityThemed"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_themed"
+            android:roundIcon="@mipmap/ic_launcher_round_themed"
+            android:targetActivity=".SplashActivity"
+            android:theme="@style/Theme.Iconify.SplashScreen">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias> <!-- Custom App Icons -->
+        <activity-alias
+            android:name=".SplashActivityRetro"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_retro"
+            android:roundIcon="@mipmap/ic_launcher_round_retro"
+            android:targetActivity=".SplashActivity"
+            android:theme="@style/Theme.Iconify.SplashScreen">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
 
         <receiver
             android:name=".services.BootCompletedReceiver"
@@ -190,12 +220,26 @@
             android:name=".services.BackgroundService"
             android:enabled="true"
             android:exported="true"
-            tools:ignore="ExportedService" />
+            tools:ignore="ExportedService" /> <!-- Quick Settings Tiles -->
+        <service
+            android:name=".services.TileNotchBarKiller"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_notch_bar_killer"
+            android:label="@string/notch_bar_killer_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
         <service
             android:name=".services.TileMonetEngine"
             android:exported="true"
-            android:icon="@drawable/ic_app_logo"
-            android:label="Monet Engine"
+            android:icon="@drawable/ic_tile_monet_engine"
+            android:label="@string/activity_title_monet_engine"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -208,8 +252,22 @@
         <service
             android:name=".services.TilePitchBlack"
             android:exported="true"
-            android:icon="@drawable/ic_app_logo"
-            android:label="Pitch Black"
+            android:icon="@drawable/ic_tile_pitch_black"
+            android:label="@string/tile_pitch_black"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+        <service
+            android:name=".services.TileRestartSystemUI"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_restart_systemui"
+            android:label="@string/restart_sysui_title"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />

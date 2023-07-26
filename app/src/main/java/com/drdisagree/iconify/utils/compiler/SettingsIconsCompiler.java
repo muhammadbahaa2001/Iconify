@@ -1,42 +1,31 @@
 package com.drdisagree.iconify.utils.compiler;
 
-import static com.drdisagree.iconify.common.Dynamic.AAPT;
-import static com.drdisagree.iconify.common.Dynamic.ZIPALIGN;
-import static com.drdisagree.iconify.utils.apksigner.CryptoUtils.readCertificate;
-import static com.drdisagree.iconify.utils.apksigner.CryptoUtils.readPrivateKey;
 import static com.drdisagree.iconify.utils.helpers.Logger.writeLog;
 
 import android.util.Log;
 
-import com.drdisagree.iconify.Iconify;
 import com.drdisagree.iconify.common.Resources;
 import com.drdisagree.iconify.utils.FileUtil;
 import com.drdisagree.iconify.utils.OverlayUtil;
 import com.drdisagree.iconify.utils.RootUtil;
 import com.drdisagree.iconify.utils.SystemUtil;
-import com.drdisagree.iconify.utils.apksigner.JarMap;
-import com.drdisagree.iconify.utils.apksigner.SignAPK;
 import com.drdisagree.iconify.utils.helpers.BinaryInstaller;
 import com.topjohnwu.superuser.Shell;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
 import java.util.Objects;
 
 public class SettingsIconsCompiler {
 
     private static final String TAG = "SettingsIconsCompiler";
-    private static final String aapt = AAPT.getAbsolutePath();
-    private static final String zipalign = ZIPALIGN.getAbsolutePath();
     private static final String[] packages = new String[]{"com.android.settings", "com.google.android.apps.wellbeing", "com.google.android.gms"};
     private static int mIconSet = 1, mIconBg = 1;
+    private static boolean mEnable = false;
 
-    public static boolean buildOverlay(int iconSet, int iconBg, String resources) throws IOException {
+    public static boolean buildOverlay(int iconSet, int iconBg, String resources, boolean enable) throws IOException {
         mIconSet = iconSet;
         mIconBg = iconBg;
+        mEnable = enable;
 
         preExecute();
         moveOverlaysToCache();
@@ -61,21 +50,21 @@ public class SettingsIconsCompiler {
             }
 
             // Build APK using AAPT
-            if (runAapt(Resources.TEMP_CACHE_DIR + "/" + packages[i] + "/" + overlay_name, overlay_name)) {
+            if (OverlayCompiler.runAapt(Resources.TEMP_CACHE_DIR + "/" + packages[i] + "/" + overlay_name)) {
                 Log.e(TAG, "Failed to build " + overlay_name + "! Exiting...");
                 postExecute(true);
                 return true;
             }
 
             // ZipAlign the APK
-            if (zipAlign(Resources.UNSIGNED_UNALIGNED_DIR + "/" + overlay_name + "-unsigned-unaligned.apk", overlay_name)) {
+            if (OverlayCompiler.zipAlign(Resources.UNSIGNED_UNALIGNED_DIR + "/" + overlay_name + "-unsigned-unaligned.apk")) {
                 Log.e(TAG, "Failed to align " + overlay_name + "-unsigned-unaligned.apk! Exiting...");
                 postExecute(true);
                 return true;
             }
 
             // Sign the APK
-            if (apkSigner(Resources.UNSIGNED_DIR + "/" + overlay_name + "-unsigned.apk", overlay_name)) {
+            if (OverlayCompiler.apkSigner(Resources.UNSIGNED_DIR + "/" + overlay_name + "-unsigned.apk")) {
                 Log.e(TAG, "Failed to sign " + overlay_name + "-unsigned.apk! Exiting...");
                 postExecute(true);
                 return true;
@@ -109,8 +98,13 @@ public class SettingsIconsCompiler {
             Shell.cmd("mkdir -p " + Resources.TEMP_CACHE_DIR + "/" + aPackages + "/").exec();
 
         // Disable the overlay in case it is already enabled
-        for (int i = 1; i <= packages.length; i++)
-            OverlayUtil.disableOverlay("IconifyComponentSIP" + i + ".overlay");
+        if (mEnable) {
+            String[] overlayNames = new String[packages.length];
+            for (int i = 1; i <= packages.length; i++) {
+                overlayNames[i - 1] = "IconifyComponentSIP" + i + ".overlay";
+            }
+            OverlayUtil.disableOverlays(overlayNames);
+        }
     }
 
     private static void postExecute(boolean hasErroredOut) {
@@ -119,6 +113,7 @@ public class SettingsIconsCompiler {
             for (int i = 1; i <= packages.length; i++) {
                 Shell.cmd("cp -rf " + Resources.SIGNED_DIR + "/IconifyComponentSIP" + i + ".apk " + Resources.OVERLAY_DIR + "/IconifyComponentSIP" + i + ".apk").exec();
                 RootUtil.setPermissions(644, Resources.OVERLAY_DIR + "/IconifyComponentSIP" + i + ".apk");
+                Shell.cmd("pm install -r " + Resources.OVERLAY_DIR + "/IconifyComponentSIP" + i + ".apk").exec();
             }
 
             SystemUtil.mountRW();
@@ -128,8 +123,13 @@ public class SettingsIconsCompiler {
             }
             SystemUtil.mountRO();
 
-            for (int i = 1; i <= 3; i++) {
-                OverlayUtil.enableOverlay("IconifyComponentSIP" + i + ".overlay");
+            // Enable the overlays
+            if (mEnable) {
+                String[] overlayNames = new String[packages.length];
+                for (int i = 1; i <= packages.length; i++) {
+                    overlayNames[i - 1] = "IconifyComponentSIP" + i + ".overlay";
+                }
+                OverlayUtil.enableOverlays(overlayNames);
             }
         }
 
@@ -179,50 +179,5 @@ public class SettingsIconsCompiler {
         }
 
         return !result.isSuccess();
-    }
-
-    private static boolean runAapt(String source, String name) {
-        Shell.Result result = Shell.cmd(aapt + " p -f -v -M " + source + "/AndroidManifest.xml -I /system/framework/framework-res.apk -S " + source + "/res -F " + Resources.UNSIGNED_UNALIGNED_DIR + '/' + name + "-unsigned-unaligned.apk >/dev/null;").exec();
-
-        if (result.isSuccess()) Log.i(TAG + " - AAPT", "Successfully built APK for " + name);
-        else {
-            Log.e(TAG + " - AAPT", "Failed to build APK for " + name + '\n' + String.join("\n", result.getOut()));
-            writeLog(TAG + " - AAPT", "Failed to build APK for " + name, result.getOut());
-        }
-
-        return !result.isSuccess();
-    }
-
-    private static boolean zipAlign(String source, String name) {
-        Shell.Result result = Shell.cmd(zipalign + " 4 " + source + ' ' + Resources.UNSIGNED_DIR + "/" + name + "-unsigned.apk").exec();
-
-        if (result.isSuccess())
-            Log.i(TAG + " - ZipAlign", "Successfully zip aligned SettingsIcons");
-        else {
-            Log.e(TAG + " - ZipAlign", "Failed to zip align SettingsIcons\n" + String.join("\n", result.getOut()));
-            writeLog(TAG + " - ZipAlign", "Failed to zip align SettingsIcons", result.getOut());
-        }
-
-        return !result.isSuccess();
-    }
-
-    private static boolean apkSigner(String source, String name) {
-        try {
-            PrivateKey key = readPrivateKey(Iconify.getAppContext().getAssets().open("Keystore/testkey.pk8"));
-            X509Certificate cert = readCertificate(Iconify.getAppContext().getAssets().open("Keystore/testkey.x509.pem"));
-
-            JarMap jar = JarMap.open(new FileInputStream(source), true);
-            FileOutputStream out = new FileOutputStream(Resources.SIGNED_DIR + "/IconifyComponent" + name + ".apk");
-
-            SignAPK.sign(cert, key, jar, out);
-
-            Log.i(TAG + " - APKSigner", "Successfully signed SettingsIcons");
-        } catch (Exception e) {
-            Log.e(TAG, e.toString());
-            writeLog(TAG + " - APKSigner", "Failed to sign SettingsIcons", e.toString());
-            postExecute(true);
-            return true;
-        }
-        return false;
     }
 }
