@@ -493,9 +493,9 @@
     <string name="navbar_tweaks">Tweaks</string>
     <string name="navbar_settings">الأعدادات</string>
     <string name="btn_close">أغلاق</string>
-    <string name="created_by_drdisagree">مصنوع باستخدام \ u2764 \ uFE0E بواسطة DrDisagree</string>
+    <string name="created_by_drdisagree">تم التعريب بواسطة MRX7014 و Mohamed Bahaa</string>
     <string name="no_supported_music_player">مشغل الموسيقى المدعوم غير موجود</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="hello_blank_fragment">اهلا blank fragment</string>
     <string name="hide_ls_carrier_title">إخفاء LS Carrier</string>
     <string name="hide_ls_carrier_desc">إخفاء اسم الناقل على شاشة القفل</string>
     <string name="hide_ls_statusbar_title">إخفاء LS Statusbar</string>
